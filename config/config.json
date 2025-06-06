@@ -1,0 +1,25 @@
+{
+  "test": {
+    "username": "root",
+    "password": "Escorts@123",
+    "database": "supplier_suggest",
+    "host": "127.0.0.1",
+    "dialect": "mysql"
+  },
+  "production": {
+    "username": "admin",
+    "password": "QjOrVgFMXmXRXxEYyarh",
+    "database": "supplier_suggest",
+    "host": "escorts-kubota-prod-app-db.cju8wuwyaq2c.ap-south-1.rds.amazonaws.com",
+    "dialect": "mysql"
+  },
+  
+  "development": {
+    "username": "root",
+    "password": "escorts123",
+    "database": "supplier_suggest",
+    "host": "127.0.0.1",
+    "dialect": "mysql",
+    "logging": false
+  }
+}
