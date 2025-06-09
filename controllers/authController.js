@@ -3,7 +3,7 @@ import { sendOtp } from "../services/otpService.js";
 import { Op } from "sequelize";
 import models from "../models/index.js";
 import { sendOTPViaMail } from "../mail/mailController.js";
-import generateToken from '../middleware/generate_token.js'
+import generateToken from "../middleware/generate_token.js";
 
 const { User } = models;
 const redis = new Redis(); // Connect to Redis
@@ -17,7 +17,9 @@ export const login = async (req, res) => {
   const identifier = phone_number || email;
 
   if (!identifier) {
-    return res.status(400).json({ status: false, message: "Phone number or Email is required" });
+    return res
+      .status(400)
+      .json({ status: false, message: "Phone number or Email is required" });
   }
 
   try {
@@ -28,22 +30,38 @@ export const login = async (req, res) => {
     if (blockedUntil) {
       return res.status(429).json({
         status: false,
-        message: `Too many requests. Try again after ${Math.ceil((blockedUntil - Date.now()) / 1000)} seconds.`,
+        message: `Too many requests. Try again after ${Math.ceil(
+          (blockedUntil - Date.now()) / 1000
+        )} seconds.`,
       });
     }
 
     if (attempts && attempts >= OTP_LIMIT) {
       // Block the user for 10 minutes
-      await redis.set(`blocked:${identifier}`, Date.now() + BLOCK_DURATION * 1000, "EX", BLOCK_DURATION);
+      await redis.set(
+        `blocked:${identifier}`,
+        Date.now() + BLOCK_DURATION * 1000,
+        "EX",
+        BLOCK_DURATION
+      );
       await redis.del(`otp_attempts:${identifier}`); // Reset attempts
-      return res.status(429).json({ status: false, message: "Too many OTP requests. Try again in 10 minutes." });
+      return res
+        .status(429)
+        .json({
+          status: false,
+          message: "Too many OTP requests. Try again in 10 minutes.",
+        });
     }
 
     // Check if the user exists
-    const user = await User.findOne({ where: { [phone_number ? "phone_number" : "email"]: identifier } });
+    const user = await User.findOne({
+      where: { [phone_number ? "phone_number" : "email"]: identifier },
+    });
 
     if (!user) {
-      return res.status(200).json({ status: false, message: "User not registered" });
+      return res
+        .status(200)
+        .json({ status: false, message: "User not registered" });
     }
 
     // Generate OTP
@@ -62,7 +80,8 @@ export const login = async (req, res) => {
     if (phone_number) {
       const otpUrl = `https://nimbusit.net/api/pushsms?user=ITnet&authkey=92D3fdWe78XU&sender=ESCORT&mobile=${phone_number}&text=Your%20Escorts%20Group%20verification%20code%20is%20${otp}`;
       const result = await sendOtp(otpUrl);
-      if (!result.success) return res.status(500).json({ error: "Failed to send OTP" });
+      if (!result.success)
+        return res.status(500).json({ error: "Failed to send OTP" });
     } else {
       await sendOTPViaMail(otp, user.email, user.name, () =>
         res.status(200).json({ status: true, message: "OTP sent successfully" })
@@ -76,14 +95,18 @@ export const login = async (req, res) => {
   }
 };
 
-
 // Verify OTP API
 export const verifyOtp = async (req, res) => {
   const { phone_number, email, otp } = req.body;
   const identifier = phone_number || email;
 
   if (!identifier || !otp) {
-    return res.status(400).json({ status: false, message: "Phone number or Email and OTP are required" });
+    return res
+      .status(400)
+      .json({
+        status: false,
+        message: "Phone number or Email and OTP are required",
+      });
   }
 
   try {
@@ -93,7 +116,9 @@ export const verifyOtp = async (req, res) => {
     if (blockedUntil) {
       return res.status(429).json({
         status: false,
-        message: `Too many incorrect attempts. Try again after ${Math.ceil((blockedUntil - Date.now()) / 1000)} seconds.`,
+        message: `Too many incorrect attempts. Try again after ${Math.ceil(
+          (blockedUntil - Date.now()) / 1000
+        )} seconds.`,
       });
     }
 
@@ -102,25 +127,45 @@ export const verifyOtp = async (req, res) => {
 
     if (attempts && attempts >= OTP_VERIFY_LIMIT) {
       // Block the user for 10 minutes
-      await redis.set(`otp_verify_blocked:${identifier}`, Date.now() + BLOCK_DURATION * 1000, "EX", BLOCK_DURATION);
+      await redis.set(
+        `otp_verify_blocked:${identifier}`,
+        Date.now() + BLOCK_DURATION * 1000,
+        "EX",
+        BLOCK_DURATION
+      );
       await redis.del(`otp_verify_attempts:${identifier}`); // Reset attempts
-      return res.status(429).json({ status: false, message: "Too many incorrect OTP attempts. Try again in 10 minutes." });
+      return res
+        .status(429)
+        .json({
+          status: false,
+          message: "Too many incorrect OTP attempts. Try again in 10 minutes.",
+        });
     }
 
     // Check if the user exists
-    const user = await User.findOne({ where: { [phone_number ? "phone_number" : "email"]: identifier } });
+    const user = await User.findOne({
+      where: { [phone_number ? "phone_number" : "email"]: identifier },
+    });
 
     if (!user) {
-      return res.status(400).json({ status: false, message: "User not registered" });
+      return res
+        .status(400)
+        .json({ status: false, message: "User not registered" });
     }
 
     // Check if OTP matches and is valid
-    if (!user.otp || user.otp !== otp || new Date(user.otp_expiry) < new Date()) {
+    if (
+      !user.otp ||
+      user.otp !== otp ||
+      new Date(user.otp_expiry) < new Date()
+    ) {
       // Increment the OTP verification attempts
       await redis.incr(`otp_verify_attempts:${identifier}`);
       await redis.expire(`otp_verify_attempts:${identifier}`, 600); // Expire attempts in 10 minutes
 
-      return res.status(400).json({ status: false, message: "Invalid or expired OTP" });
+      return res
+        .status(400)
+        .json({ status: false, message: "Invalid or expired OTP" });
     }
 
     // OTP is valid - Reset OTP attempts
@@ -134,7 +179,23 @@ export const verifyOtp = async (req, res) => {
     user.otp_expiry = null;
     await user.save();
 
-    res.status(200).json({ status: true, message: "OTP verified successfully", token });
+    res
+      .status(200)
+      .json({
+        status: true,
+        message: "OTP verified successfully",
+        token,
+        user: {
+          phone_number : user.phone_number,
+          name : user.name,
+          email : user.email,
+          usertype : user.usertype,
+          department_id : user.department_id,
+          access_token : user.access_token,
+          id : user.id
+          
+        },
+      });
   } catch (error) {
     console.error("Error in verifyOtp:", error);
     res.status(500).json({ error: "Internal server error" });
