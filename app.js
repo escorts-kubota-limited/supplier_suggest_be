@@ -22,6 +22,7 @@ const allowedOrigins = [
   "https://apiesuggest.escortskubota.com:30002",
   "http://192.168.1.10:30002",
   "http://3.110.7.17:30002",
+  "http://3.110.7.17",
   "http://3.110.7.17/",
   "http://3.110.7.17:80",
   "http://192.168.20.160:80",
