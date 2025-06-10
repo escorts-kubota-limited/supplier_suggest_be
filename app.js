@@ -83,6 +83,11 @@ app.use(cors(corsOptions));
 // Body parser
 app.use(bodyParser.json());
 
+app.use((req, res, next) => {
+  res.setHeader("X-XSS-Protection", "1; mode=block");
+  next();
+});
+
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/suggestion", suggestionRoute);
