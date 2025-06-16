@@ -13,7 +13,6 @@
     "host": "escorts-kubota-prod-app-db.cju8wuwyaq2c.ap-south-1.rds.amazonaws.com",
     "dialect": "mysql"
   },
-  
   "development": {
     "username": "root",
     "password": "escorts123",
